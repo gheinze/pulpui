@@ -1,0 +1,22 @@
+# ide files
+.idea
+.vscode
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# python related
+__pycache__
+venv
+dist/
+*.egg-info/
+
+# Node
+node_modules
+dist
+dist-ssr
+*.local
+

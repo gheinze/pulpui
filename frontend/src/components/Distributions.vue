@@ -9,11 +9,15 @@ import Column from "primevue/column";
 import ColumnGroup from "primevue/columngroup"; //optional for column grouping
 import Toolbar from 'primevue/toolbar';
 import OverlayPanel from 'primevue/overlaypanel';
+import Textarea from 'primevue/textarea';
 
 
 const distributions = ref(null);
 const isLoading = ref(false);
 const selectedDistribution = ref(null);
+
+const synchOverlay = ref();
+const synchCmd = ref(null);
 
 const publicationOverlay = ref();
 const isPublicationLoading = ref(false);
@@ -52,6 +56,18 @@ function loadDistributions() {
 
 function openUrl(url) {
   window.open(url);
+}
+
+
+function presentSync(event, repository_name) {
+  synchCmd.value = `
+# Sync a repository (implicitly versioning it)
+pulp rpm repository  sync   --name       ${repository_name}
+
+# Create a publication based on the latest repository version
+pulp rpm publication create --repository ${repository_name}
+`
+  synchOverlay.value.toggle(event);
 }
 
 
@@ -95,10 +111,6 @@ function versionSelected(e) {
   // A version may have multiple publications associated. Select first one
   let publications = e.data.publications;
 
-  console.log("Publication selected");
-  console.log(publications);
-  console.log("event end");
-
   if (Array.isArray(publications) && publications.length) {
       modDistCmd.value = "pulp rpm distribution update --name " + selectedDistribution.value + 
       " --publication $BASE_ADDR " + publications[0].publication_href;
@@ -106,6 +118,16 @@ function versionSelected(e) {
     modDistCmd.value = "No distribution for this version";
   }
 
+}
+
+
+function copyModDistCmdToClipboard() {
+  navigator.clipboard.writeText(modDistCmd.value);
+}
+
+
+function copySynchCmdsToClipboard() {
+  navigator.clipboard.writeText(synchCmd.value);
 }
 
 
@@ -150,7 +172,7 @@ onMounted(() => {
 
           <Column header="Synch" >
             <template #body="{data}">
-              <Button @click="openUrl(data.base_url)" icon="pi pi-sync" class="p-button-rounded p-button-secondary p-button-text" v-tooltip="'Create new version'"/>
+              <Button @click="presentSync($event, data.repository_name)" icon="pi pi-sync" class="p-button-rounded p-button-secondary p-button-text" v-tooltip="'Create new version'"/>
             </template>
           </Column>
 
@@ -170,10 +192,22 @@ onMounted(() => {
         </DataTable>
       </div>
 
-      <OverlayPanel ref="publicationOverlay" :showCloseIcon="true" id="overlay_panel" style="width: 450px" aria:haspopup="true" aria-controls="overlay_panel" :breakpoints="{'960px': '75vw'}">
+
+      <OverlayPanel ref="synchOverlay" :showCloseIcon="true">
+        <h4>CLI commands to synch a repository (creating a new version) and create a new publication</h4>
+        <div><Button @click="copySynchCmdsToClipboard()" icon="pi pi-copy" class="p-button-rounded p-button-secondary p-button-text"  v-tooltip="'Copy'"/></div>
+        <Textarea v-model="synchCmd" :autoResize="true" rows="5" cols="100" />
+      </OverlayPanel>
+
+
+      <OverlayPanel ref="publicationOverlay" :showCloseIcon="true" id="overlay_panel" style="width: 800px" aria:haspopup="true" aria-controls="overlay_panel">
         <DataTable :value="publications" :selectionMode="'single'" @row-click="versionSelected($event)"  dataKey="number" :loading="isPublicationLoading">
           <template #header>
-            {{ modDistCmd }}
+            <div v-if="modDistCmd" >
+              <h4>CLI command to point publication to selected distribution</h4>
+              <div><Button @click="copyModDistCmdToClipboard()" icon="pi pi-copy" class="p-button-rounded p-button-secondary p-button-text"  v-tooltip="'Copy'"/></div>
+              <Textarea v-model="modDistCmd" :autoResize="true" rows="5" cols="70" />
+            </div>
             <h4>Select a Publication</h4>
           </template>
 

@@ -3,13 +3,15 @@ import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 import pulpService from "@/services/pulpService";
 
-import DataTable from "primevue/datatable";
 import Button from "primevue/button";
 import Column from "primevue/column";
 import ColumnGroup from "primevue/columngroup"; //optional for column grouping
-import Toolbar from 'primevue/toolbar';
+import DataTable from "primevue/datatable";
 import OverlayPanel from 'primevue/overlaypanel';
+import SelectButton from 'primevue/selectbutton';
 import Textarea from 'primevue/textarea';
+import Toolbar from 'primevue/toolbar';
+import ToggleButton from 'primevue/togglebutton';
 
 import { useSelectPublication } from '@/components/selectPublication.js';
 
@@ -23,6 +25,21 @@ const selectedDistribution = ref(null);
 
 const synchOverlay = ref();
 const synchCmd = ref(null);
+const syncCliCmd = ref(null);
+const syncRestCmd = ref(null);
+
+const generateCli = ref(true);
+
+const cmdGeneration = ref([
+    {name: 'CLI Generation',  value: 'CLI'}
+]);
+
+const cmdGenerationOptions = ref([
+    {name: 'CLI Generation',  value: 'CLI'},
+    {name: 'REST Generation', value: 'REST'}
+]);
+
+
 
 
 function loadDistributions() {
@@ -58,14 +75,28 @@ function openUrl(url) {
 }
 
 
-function presentSync(event, repository_name) {
-  synchCmd.value = `
+function setSynchCmd() {
+  synchCmd.value = generateCli.value ? syncCliCmd.value : syncRestCmd.value;
+}
+
+
+function showSynchOverlay(event, repository_name) {
+  syncCliCmd.value =
+`
 # Sync a repository (implicitly versioning it)
-pulp rpm repository  sync   --name       ${repository_name}
+pulp rpm repository sync --name ${repository_name}
 
 # Create a publication based on the latest repository version
 pulp rpm publication create --repository ${repository_name}
 `
+; 
+  
+  syncRestCmd.value =
+`
+REST
+`
+;
+  setSynchCmd();
   synchOverlay.value.toggle(event);
 }
 
@@ -86,6 +117,7 @@ onMounted(() => {
 
       <Toolbar>
         <template #end>
+          <!--<SelectButton id="code-option" v-model="cmdGeneration" :options="cmdGenerationOptions" optionLabel="name" multiple class="mr-4"/>-->
           <Button class="mr-2" @click="loadDistributions" :loading="isLoading">Discover</Button>
         </template>
       </Toolbar>
@@ -107,7 +139,7 @@ onMounted(() => {
 
           <Column>
             <template #body="{data}">
-              <Button @click="openUrl(data.base_url)" icon="pi pi-external-link" class="p-button-rounded p-button-secondary p-button-text"  v-tooltip="data.base_url"/>
+              <Button @click="openUrl(data.base_url)" icon="pi pi-external-link" class="p-button-rounded p-button-text"  v-tooltip="data.base_url"/>
             </template>
           </Column>
 
@@ -116,7 +148,7 @@ onMounted(() => {
 
           <Column header="Synch" >
             <template #body="{data}">
-              <Button @click="presentSync($event, data.repository_name)" icon="pi pi-sync" class="p-button-rounded p-button-secondary p-button-text" v-tooltip="'Create new version'"/>
+              <Button @click="showSynchOverlay($event, data.repository_name)" icon="pi pi-sync" class="p-button-rounded p-button-text" v-tooltip="'Create new version'"/>
             </template>
           </Column>
 
@@ -124,7 +156,7 @@ onMounted(() => {
 
           <Column header="Promote" >
             <template #body="{data}">
-              <Button @click="presentPublication($event, data.name, data.versions_href, publicationOverlay)" icon="pi pi-arrow-up-right" class="p-button-rounded p-button-secondary p-button-text"  v-tooltip="'Choose another version'"
+              <Button @click="presentPublication($event, data.name, data.versions_href, publicationOverlay)" icon="pi pi-arrow-up-right" class="p-button-rounded p-button-text"  v-tooltip="'Choose another version'"
                   :disabled="data.latest_version == data.version_number"
               />
             </template>
@@ -139,7 +171,10 @@ onMounted(() => {
 
       <OverlayPanel ref="synchOverlay" :showCloseIcon="true">
         <h4>CLI commands to synch a repository (creating a new version) and create a new publication</h4>
-        <div><Button @click="copyToClipboard(synchCmd)" icon="pi pi-copy" class="p-button-rounded p-button-secondary p-button-text"  v-tooltip="'Copy'"/></div>
+        <div>
+          <Button @click="copyToClipboard(synchCmd)" icon="pi pi-copy" class="p-button-rounded p-button-text"  v-tooltip="'Copy'"/>
+          <!--<ToggleButton v-model="generateCli" onLabel="CLI" offLabel="REST" />-->
+        </div>
         <Textarea v-model="synchCmd" :autoResize="true" rows="5" cols="100" />
       </OverlayPanel>
 
@@ -149,7 +184,10 @@ onMounted(() => {
           <template #header>
             <div v-if="modDistCmd" >
               <h4>CLI command to point publication to selected distribution</h4>
-              <div><Button @click="copyToClipboard(modDistCmd)" icon="pi pi-copy" class="p-button-rounded p-button-secondary p-button-text"  v-tooltip="'Copy'"/></div>
+              <div>
+                <Button @click="copyToClipboard(modDistCmd)" icon="pi pi-copy" class="p-button-rounded p-button-text"  v-tooltip="'Copy'"/>
+                <!--<ToggleButton v-model="generateCli" onLabel="CLI" offLabel="REST" />-->
+              </div>
               <Textarea v-model="modDistCmd" :autoResize="true" rows="5" cols="70" />
             </div>
             <h4>Select a Publication</h4>
@@ -183,5 +221,6 @@ a {
   margin-right: 20px;
   margin-left: 20px;
 }
+
 
 </style>

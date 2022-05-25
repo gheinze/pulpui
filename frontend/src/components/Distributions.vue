@@ -169,7 +169,7 @@ onMounted(() => {
       </div>
 
 
-      <OverlayPanel ref="synchOverlay" :showCloseIcon="true">
+      <OverlayPanel ref="synchOverlay" :dismissable="false" :showCloseIcon="true">
         <h4>CLI commands to synch a repository (creating a new version) and create a new publication</h4>
         <div>
           <Button @click="copyToClipboard(synchCmd)" icon="pi pi-copy" class="p-button-rounded p-button-text"  v-tooltip="'Copy'"/>
@@ -179,7 +179,7 @@ onMounted(() => {
       </OverlayPanel>
 
 
-      <OverlayPanel ref="publicationOverlay" :showCloseIcon="true" id="overlay_panel" style="width: 800px" aria:haspopup="true" aria-controls="overlay_panel">
+      <OverlayPanel ref="publicationOverlay" :dismissable="false" :showCloseIcon="true" id="overlay_panel" style="width: 800px" aria:haspopup="true" aria-controls="overlay_panel">
         <DataTable :value="publications" :selectionMode="'single'" @row-click="versionSelected($event)"  dataKey="number" :loading="isPublicationLoading">
           <template #header>
             <div v-if="modDistCmd" >

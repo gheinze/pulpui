@@ -56,7 +56,7 @@ export function useSelectPublication() {
 
         if (Array.isArray(publications) && publications.length) {
             modDistCmd.value = "pulp rpm distribution update --name " + selectedDistribution.value + 
-            " --publication $BASE_ADDR " + publications[0].publication_href;
+            " --publication $BASE_ADDR" + publications[0].publication_href;
         } else {
             modDistCmd.value = "No distribution for this version";
         }
